@@ -1,0 +1,13 @@
+# Patterns to ignore when building packages.
+.git/
+.gitignore
+.helmignore
+.vscode/
+.idea/
+*.swp
+*.bak
+*.orig
+*~
+.DS_Store
+values-secrets*.yaml
+.github/

@@ -1,0 +1,43 @@
+Jikan REST API deployed as release: {{ .Release.Name }}
+
+Port-forward the API:
+  kubectl port-forward svc/{{ include "jikan-rest.fullname" . }} 8080:8080
+
+On first run the database is empty. Populate it:
+  kubectl exec -it deploy/{{ include "jikan-rest.fullname" . }} -- php artisan jikan:index-media anime
+  kubectl exec -it deploy/{{ include "jikan-rest.fullname" . }} -- php artisan jikan:index-media manga
+
+Full indexing takes 4-5 days. Run in the background.
+
+Service endpoints (in-cluster):
+  API:        {{ include "jikan-rest.fullname" . }}:8080
+  MongoDB:    {{ include "jikan-rest.mongodbFullname" . }}:27017
+  Redis:      {{ include "jikan-rest.redisFullname" . }}:6379
+  Typesense:  {{ include "jikan-rest.typesenseFullname" . }}:8108
+
+--------------------------------------------------------------------
+CREDENTIALS — recommended install pattern
+--------------------------------------------------------------------
+Create a gitignored file (e.g. values-secrets.yaml) — never commit it:
+
+  mongodb:
+    auth:
+      rootPassword: "STRONG_ROOT_PASSWORD"
+      customUsers:
+        - password: "STRONG_PASSWORD"
+
+  valkey:
+    auth:
+      aclUsers:
+        default:
+          password: "STRONG_PASSWORD"
+
+Then install:
+  helm install {{ .Release.Name }} ./helm/jikan-rest -f values-secrets.yaml
+
+Or upgrade:
+  helm upgrade {{ .Release.Name }} ./helm/jikan-rest -f values-secrets.yaml
+
+Laravel's APP_KEY and Typesense's API key are both generated automatically
+on first install (Secrets {{ .Values.appKeySecret }} and
+{{ .Values.typesense.apiKeySecret }}) and kept unchanged on every later upgrade.

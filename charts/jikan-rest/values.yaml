@@ -1,0 +1,95 @@
+replicaCount: 1
+
+image:
+  repository: jikanme/jikan-rest
+  pullPolicy: IfNotPresent
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# App runtime configuration
+config:
+  appDebug: false
+  logLevel: info
+  microcaching: true
+  microcachingExpire: 60
+  corsMiddleware: false
+  jikanEnablePeriodicalFullIndexer: false
+  # Optional overrides (leave empty to use defaults)
+  rrMaxWorkerMemory: ""
+  rrMaxRequestSizeMb: ""
+  jikanQueueWorkerProcessNum: ""
+
+# ---------------------------------------------------------------------------
+# Laravel APP_KEY
+# ---------------------------------------------------------------------------
+appKeySecret: "jikan-rest-app-key"
+
+credentials:
+  mongodb:
+    database: jikan
+
+resources: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+securityContext: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+networkPolicy:
+  enabled: true
+  # Additional pod selectors allowed to reach jikan-rest:8080
+  additionalIngressSelectors: []
+
+# ---------------------------------------------------------------------------
+# Redis sub-chart
+# https://github.com/CloudPirates-io/helm-charts
+# ---------------------------------------------------------------------------
+redis:
+  auth:
+    enabled: false
+# ---------------------------------------------------------------------------
+# MongoDB sub-chart
+# https://github.com/CloudPirates-io/helm-charts
+# ---------------------------------------------------------------------------
+mongodb:
+  auth:
+    enabled: true
+    rootUsername: admin
+  customUsers:
+    - name: jikan
+      database: jikan
+      roles:
+        - readWrite
+  persistence:
+    enabled: true
+    size: 8Gi
+  extraArgs:
+    - "--wiredTigerCacheSizeGB=1"
+
+# ---------------------------------------------------------------------------
+# Typesense sub-chart
+# https://github.com/hmphu/helm-charts
+# ---------------------------------------------------------------------------
+typesense:
+  image:
+    tag: "0.24.1"
+  service:
+    port: 8108
+  persistence:
+    enabled: true
+    size: 5Gi
+    path: /data
+  apiKeySecret: "jikan-rest-typesense-apikey"

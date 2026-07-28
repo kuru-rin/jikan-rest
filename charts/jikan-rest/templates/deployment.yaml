@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jikan-rest.fullname" . }}
+  labels:
+    {{- include "jikan-rest.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "jikan-rest.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "jikan-rest.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: jikan-rest
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: rr-health
+              containerPort: 2114
+              protocol: TCP
+{{/*          startupProbe:*/}}
+{{/*            httpGet:*/}}
+{{/*              path: /health?plugin=http*/}}
+{{/*              port: 2114*/}}
+{{/*            failureThreshold: 30*/}}
+{{/*            periodSeconds: 5*/}}
+{{/*          livenessProbe:*/}}
+{{/*            httpGet:*/}}
+{{/*              path: /health?plugin=http*/}}
+{{/*              port: 2114*/}}
+{{/*            initialDelaySeconds: 0*/}}
+{{/*            periodSeconds: 10*/}}
+{{/*            timeoutSeconds: 2*/}}
+{{/*          readinessProbe:*/}}
+{{/*            httpGet:*/}}
+{{/*              path: /health?plugin=http*/}}
+{{/*              port: 2114*/}}
+{{/*            initialDelaySeconds: 0*/}}
+{{/*            periodSeconds: 5*/}}
+{{/*            timeoutSeconds: 2*/}}
+          env:
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: {{ .Values.config.appDebug | quote }}
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.appKeySecret }}
+                  key: app-key
+            - name: LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            # Redis / Valkey
+            - name: CACHING
+              value: "true"
+            - name: CACHE_DRIVER
+              value: redis
+            - name: REDIS_HOST
+              value: {{ include "jikan-rest.redisFullname" . }}
+            - name: REDIS_PORT
+              value: "6379"
+            # MongoDB
+            - name: DB_CONNECTION
+              value: mongodb
+            - name: DB_HOST
+              value: {{ include "jikan-rest.mongodbFullname" . }}
+            - name: DB_PORT
+              value: "27017"
+            - name: DB_DATABASE
+              value: {{ .Values.credentials.mongodb.database | quote }}
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jikan-rest.mongodbAppUserSecret" . }}
+                  key: CUSTOM_USER
+            - name: DB_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jikan-rest.mongodbAppUserSecret" . }}
+                  key: CUSTOM_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jikan-rest.mongodbAppUserSecret" . }}
+                  key: CUSTOM_PASSWORD
+            # Typesense
+            - name: SCOUT_DRIVER
+              value: typesense
+            - name: SCOUT_QUEUE
+              value: "false"
+            - name: TYPESENSE_HOST
+              value: {{ include "jikan-rest.typesenseFullname" . }}
+            - name: TYPESENSE_PORT
+              value: "8108"
+            - name: TYPESENSE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.typesense.apiKeySecret }}
+                  key: typesense-apikey
+            # Caching tuning
+            - name: MICROCACHING
+              value: {{ .Values.config.microcaching | quote }}
+            - name: MICROCACHING_EXPIRE
+              value: {{ .Values.config.microcachingExpire | quote }}
+            - name: CORS_MIDDLEWARE
+              value: {{ .Values.config.corsMiddleware | quote }}
+            - name: JIKAN_ENABLE_PERIODICAL_FULL_INDEXER
+              value: {{ .Values.config.jikanEnablePeriodicalFullIndexer | quote }}
+            {{- if .Values.config.rrMaxWorkerMemory }}
+            - name: RR_MAX_WORKER_MEMORY
+              value: {{ .Values.config.rrMaxWorkerMemory | quote }}
+            {{- end }}
+            {{- if .Values.config.rrMaxRequestSizeMb }}
+            - name: RR_MAX_REQUEST_SIZE_MB
+              value: {{ .Values.config.rrMaxRequestSizeMb | quote }}
+            {{- end }}
+            {{- if .Values.config.jikanQueueWorkerProcessNum }}
+            - name: JIKAN_QUEUE_WORKER_PROCESS_NUM
+              value: {{ .Values.config.jikanQueueWorkerProcessNum | quote }}
+            {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

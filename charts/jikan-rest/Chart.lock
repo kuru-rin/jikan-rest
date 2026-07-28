@@ -1,0 +1,12 @@
+dependencies:
+- name: redis
+  repository: oci://ghcr.io/cloudpirates-io/helm-charts
+  version: 0.33.2
+- name: mongodb
+  repository: oci://ghcr.io/cloudpirates-io/helm-charts
+  version: 0.18.2
+- name: typesense
+  repository: https://hmphu.github.io/helm-charts/
+  version: 0.1.6
+digest: sha256:b5b837e8205f97fa2f47be070aa7321bf6e72f671d51a2d6f4ff34335b5d5b1c
+generated: "2026-08-01T08:55:07.245846437+02:00"

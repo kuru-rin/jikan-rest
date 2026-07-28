@@ -1,0 +1,17 @@
+apiVersion: v2
+name: jikan-rest
+description: Helm chart for the Jikan REST API
+type: application
+version: 0.1.0
+appVersion: "v4.2.4"
+
+dependencies:
+  - name: redis
+    version: "0.33.2"
+    repository: "oci://ghcr.io/cloudpirates-io/helm-charts"
+  - name: mongodb
+    version: "0.18.2"
+    repository: "oci://ghcr.io/cloudpirates-io/helm-charts"
+  - name: typesense
+    version: "0.1.6"
+    repository: "https://hmphu.github.io/helm-charts/"

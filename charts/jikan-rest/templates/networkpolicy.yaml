@@ -1,0 +1,158 @@
+{{- if .Values.networkPolicy.enabled }}
+---
+# Egress from jikan-rest: in-cluster services + external internet (MyAnimeList scraping)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "jikan-rest.fullname" . }}-egress
+  labels:
+    {{- include "jikan-rest.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "jikan-rest.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # DNS (required for all name resolution)
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - port: 6379
+          protocol: TCP
+    # MongoDB
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: mongodb
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - port: 27017
+          protocol: TCP
+    # Typesense (hmphu chart uses legacy labels)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: typesense
+              release: {{ .Release.Name }}
+      ports:
+        - port: 8108
+          protocol: TCP
+    # External internet: required for MyAnimeList scraping (source=local crawl)
+    # Allows HTTPS and HTTP to any IP outside the cluster.
+    # Restrict the cidr if your cluster's pod/service ranges differ.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+---
+# Ingress to jikan-rest on port 8080.
+# No `from` clause = allow from anywhere in the cluster (and kubectl port-forward).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "jikan-rest.fullname" . }}-ingress
+  labels:
+    {{- include "jikan-rest.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "jikan-rest.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+      {{- if .Values.networkPolicy.additionalIngressSelectors }}
+      from:
+        {{- toYaml .Values.networkPolicy.additionalIngressSelectors | nindent 8 }}
+      {{- end }}
+---
+# Valkey: accept connections only from jikan-rest
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "jikan-rest.fullname" . }}-valkey-ingress
+  labels:
+    {{- include "jikan-rest.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: valkey
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "jikan-rest.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 6379
+          protocol: TCP
+---
+# MongoDB: accept connections only from jikan-rest
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "jikan-rest.fullname" . }}-mongodb-ingress
+  labels:
+    {{- include "jikan-rest.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "jikan-rest.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 27017
+          protocol: TCP
+---
+# Typesense: accept connections only from jikan-rest
+# hmphu/typesense chart uses legacy labels (app/release) not app.kubernetes.io/*
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "jikan-rest.fullname" . }}-typesense-ingress
+  labels:
+    {{- include "jikan-rest.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: typesense
+      release: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "jikan-rest.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 8108
+          protocol: TCP
+{{- end }}
