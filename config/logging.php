@@ -65,6 +65,9 @@ return [
             'path' => storage_path('logs/daily/lumen.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => 14,
+            'formatter_with' => [
+                'includeStacktraces' => true,
+            ],
 //            'replace_placeholders' => true, // enabled by default on 10.x - IDK what it does
         ],
 
