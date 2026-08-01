@@ -16,7 +16,7 @@ on:
         default: 'v4.0.0-nightly-<put_date_here>'
 
 env:
-  REGISTRY_IMAGE: ghcr.io/jikan-me/jikan-rest
+  REGISTRY_IMAGE: docker.io/kururin6032/jikan-rest
 
 jobs:
   build-app-image:
@@ -48,24 +48,23 @@ jobs:
           labels: |
             org.opencontainers.image.title=Jikan REST API
             org.opencontainers.image.description=REST API for Jikan
-            org.opencontainers.image.url=https://jikan.moe
-            org.opencontainers.image.source=https://github.com/jikan-me/jikan-rest
-            org.opencontainers.image.documentation=https://github.com/jikan-me/jikan-rest/blob/master/container_usage.md
+            org.opencontainers.image.url=https://github.com/kuru-rin/jikan-rest
+            org.opencontainers.image.source=https://github.com/kuru-rin/jikan-rest
+            org.opencontainers.image.documentation=https://github.com/kuru-rin/jikan-rest/blob/master/container_usage.md
             org.opencontainers.image.revision=${{ github.sha }}
           annotations: |
             org.opencontainers.image.title=Jikan REST API
             org.opencontainers.image.description=REST API for Jikan
-            org.opencontainers.image.url=https://jikan.moe
-            org.opencontainers.image.source=https://github.com/jikan-me/jikan-rest
-            org.opencontainers.image.documentation=https://github.com/jikan-me/jikan-rest/blob/master/container_usage.md
+            org.opencontainers.image.url=https://github.com/kuru-rin/jikan-rest
+            org.opencontainers.image.source=https://github.com/kuru-rin/jikan-rest
+            org.opencontainers.image.documentation=https://github.com/kuru-rin/jikan-rest/blob/master/container_usage.md
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Login to GitHub Container Registry
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push by digest
         id: build
@@ -126,21 +125,14 @@ jobs:
           labels: |
             org.opencontainers.image.title=Jikan REST API
             org.opencontainers.image.description=REST API for Jikan
-            org.opencontainers.image.url=https://jikan.moe
-            org.opencontainers.image.source=https://github.com/jikan-me/jikan-rest
-            org.opencontainers.image.documentation=https://github.com/jikan-me/jikan-rest/blob/master/container_usage.md
+            org.opencontainers.image.url=https://github.com/kuru-rin/jikan-rest
+            org.opencontainers.image.source=https://github.com/kuru-rin/jikan-rest
+            org.opencontainers.image.documentation=https://github.com/kuru-rin/jikan-rest/blob/master/container_usage.md
             org.opencontainers.image.revision=${{ github.sha }}
           tags: |
             type=raw,value=${{ inputs.image_tag || github.ref_name }}
             type=raw,value=${{ github.ref_type == 'tag' && 'latest' || 'latest-nightly' }}
             type=sha
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
